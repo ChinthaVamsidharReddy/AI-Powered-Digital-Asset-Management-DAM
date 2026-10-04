@@ -1,0 +1,17 @@
+# Web / API
+fastapi>=0.115
+uvicorn[standard]>=0.30
+# Core
+numpy>=1.26
+pillow>=10.3
+pymupdf>=1.24            # PDF text extraction + page rendering
+opencv-python-headless>=4.9   # video decoding / keyframe sampling (bundles ffmpeg codecs)
+# AI models (CLIP for images/video/page visuals, MiniLM for text). Downloaded on first run (~700 MB total)
+sentence-transformers>=3.0
+torch>=2.2
+# Optional: speech-to-text for video audio (set ENABLE_ASR=true)
+# faster-whisper>=1.0
+# Dev / tests / dataset scripts
+pytest>=8.0
+httpx>=0.27
+requests>=2.31

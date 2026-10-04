@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Asset search</title>
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--ink:#1b2430;--mute:#667385;--line:#dde2ea;--accent:#1f5eff;--ok:#18794e;--bad:#b42318;--warn:#a15c07}
+@media (prefers-color-scheme:dark){:root{--bg:#12161c;--panel:#1a2029;--ink:#e6ebf2;--mute:#97a3b4;--line:#2b3441;--accent:#6b9bff;--ok:#4cc38a;--bad:#ff7a70;--warn:#f0b35a}}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+header{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--line);padding:12px 20px}
+.bar{display:flex;gap:10px;align-items:center;max-width:1200px;margin:0 auto}
+nav button{background:none;border:0;color:var(--mute);font:inherit;padding:6px 10px;cursor:pointer;border-bottom:2px solid transparent}
+nav button.on{color:var(--ink);border-color:var(--accent)}
+input[type=search]{flex:1;padding:10px 14px;font:inherit;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+button.pri{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10px 18px;font:inherit;cursor:pointer}
+button.sec{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 12px;font:inherit;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+main{max-width:1200px;margin:0 auto;padding:16px 20px 60px}
+.filters{display:flex;flex-wrap:wrap;gap:14px;align-items:center;color:var(--mute);font-size:13px;margin-bottom:14px}
+.filters input[type=text],.filters input[type=number]{padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);width:110px;font:inherit}
+.filters label{display:flex;gap:5px;align-items:center}
+.meta{color:var(--mute);font-size:13px;margin:4px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column}
+.card:hover{border-color:var(--accent)}
+.thumb{aspect-ratio:4/3;background:#0002 center/cover no-repeat;position:relative;display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:12px}
+.badge{position:absolute;left:8px;top:8px;background:#000b;color:#fff;border-radius:4px;padding:1px 7px;font-size:12px}
+.badge.r{left:auto;right:8px}
+.cb{padding:9px 11px;display:flex;flex-direction:column;gap:3px;min-height:92px}
+.name{font-weight:600;word-break:break-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sub{color:var(--mute);font-size:12.5px}
+.snip{font-size:12.5px;color:var(--ink);opacity:.85;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+mark{background:#ffe27a66;color:inherit;border-radius:2px}
+.score{height:3px;background:var(--line)}.score i{display:block;height:100%;background:var(--accent)}
+.empty{padding:50px 0;text-align:center;color:var(--mute)}
+.modal{position:fixed;inset:0;background:#000a;z-index:20;display:none;align-items:center;justify-content:center;padding:20px}
+.modal.on{display:flex}
+.sheet{background:var(--panel);border-radius:12px;max-width:1100px;width:100%;max-height:94vh;overflow:auto;display:grid;grid-template-columns:minmax(0,3fr) minmax(260px,2fr)}
+@media(max-width:800px){.sheet{grid-template-columns:1fr}}
+.pv{background:#000;display:flex;align-items:center;justify-content:center;min-height:320px}
+.pv img,.pv video{max-width:100%;max-height:78vh}.pv iframe{width:100%;height:78vh;border:0;background:#fff}
+.info{padding:16px 18px;display:flex;flex-direction:column;gap:10px;font-size:13.5px}
+.info h3{margin:0;word-break:break-all;font-size:16px}
+table{border-collapse:collapse;width:100%}td{padding:3px 0;vertical-align:top}td:first-child{color:var(--mute);width:92px}
+.path{font:12px/1.35 ui-monospace,Menlo,Consolas,monospace;word-break:break-all;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.prog{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin:10px 0}.prog i{display:block;height:100%;background:var(--accent);transition:width .4s}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:16px}
+.kv{display:flex;flex-wrap:wrap;gap:8px 26px}.kv div b{display:block;font-size:20px}.kv div span{color:var(--mute);font-size:12.5px}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+.ftable td{padding:5px 8px 5px 0;border-bottom:1px solid var(--line);font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <nav><button id="tabS" class="on">Search</button><button id="tabI">Indexing</button></nav>
+    <input id="q" type="search" placeholder="Describe what you are looking for, e.g. “a woman standing with a cat”" autofocus>
+    <button class="pri" id="go">Search</button>
+  </div>
+</header>
+<main>
+<section id="search">
+  <div class="filters">
+    <span>Type</span>
+    <label><input type="checkbox" class="ty" value="image" checked> Images <span class="sub" id="n-image"></span></label>
+    <label><input type="checkbox" class="ty" value="video" checked> Videos <span class="sub" id="n-video"></span></label>
+    <label><input type="checkbox" class="ty" value="pdf" checked> PDFs <span class="sub" id="n-pdf"></span></label>
+    <label>Extension <input type="text" id="ext" placeholder="jpg, mp4"></label>
+    <label>Size MB <input type="number" id="minmb" min="0" step="any" placeholder="min" style="width:70px"> – <input type="number" id="maxmb" min="0" step="any" placeholder="max" style="width:70px"></label>
+    <label>Folder contains <input type="text" id="folder" placeholder="brochures"></label>
+  </div>
+  <div class="meta" id="meta"></div>
+  <div class="grid" id="grid"></div>
+  <div class="row" style="justify-content:center;margin-top:18px"><button class="sec" id="more" style="display:none">Show more</button></div>
+</section>
+<section id="index" style="display:none">
+  <div class="panel">
+    <div class="row" style="margin:0 0 6px"><button class="pri" id="start">Index new and changed files</button>
+      <button class="sec" id="retry">Retry failed</button><button class="sec" id="cancel">Cancel</button></div>
+    <div id="phase" class="sub"></div>
+    <div class="prog"><i id="bar" style="width:0"></i></div>
+    <div class="kv" id="runkv"></div>
+    <div class="sub" id="current" style="margin-top:8px"></div>
+  </div>
+  <div class="panel"><div class="kv" id="statkv"></div></div>
+  <div class="panel"><b>Files that need attention</b> <span class="sub">(failed, unsupported)</span>
+    <table class="ftable" id="fails" style="margin-top:8px"></table></div>
+</section>
+</main>
+
+<div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtSize=b=>b>=1e9?(b/1e9).toFixed(2)+" GB":b>=1e6?(b/1e6).toFixed(1)+" MB":b>=1e3?(b/1e3).toFixed(0)+" KB":b+" B";
+const fmtTime=s=>{s=Math.round(s);const m=Math.floor(s/60);return m+":"+String(s%60).padStart(2,"0")};
+const ICON={image:"Image",video:"Video",pdf:"PDF"};
+let state={q:"",offset:0,total:0,results:[]};
+
+/* ---------- tabs ---------- */
+$("#tabS").onclick=()=>tab("search");$("#tabI").onclick=()=>tab("index");
+function tab(t){$("#search").style.display=t=="search"?"":"none";$("#index").style.display=t=="index"?"":"none";
+  $("#tabS").classList.toggle("on",t=="search");$("#tabI").classList.toggle("on",t=="index");
+  if(t=="index"){pollIndex();loadStats();loadFails()}}
+
+/* ---------- search ---------- */
+function params(offset){
+  const p=new URLSearchParams({q:state.q,offset});
+  const ty=$$(".ty:checked").map(x=>x.value); if(ty.length&&ty.length<3)p.set("types",ty.join(","));
+  if($("#ext").value.trim())p.set("ext",$("#ext").value.replace(/\s/g,""));
+  if($("#minmb").value)p.set("min_size_mb",$("#minmb").value); if($("#maxmb").value)p.set("max_size_mb",$("#maxmb").value);
+  if($("#folder").value.trim())p.set("folder",$("#folder").value.trim());
+  return p;}
+async function search(more){
+  if(!more){state.q=$("#q").value.trim();state.offset=0;state.results=[]}
+  if(!state.q)return;
+  $("#meta").textContent="Searching…";
+  const r=await fetch("/api/search?"+params(state.offset));
+  if(!r.ok){$("#meta").textContent="Search failed: "+(await r.text());return}
+  const d=await r.json(); state.total=d.total; state.results.push(...d.results); state.offset+=d.results.length;
+  const sig=Object.entries(d.signals).map(([k,v])=>k+":"+v).join("  ");
+  $("#meta").textContent=`${d.total} result${d.total==1?"":"s"} in ${d.took_ms} ms`+(d.intent.length?` · treating “${d.intent.join("/")}” in your query as a hint`:"");
+  if(!more)["image","video","pdf"].forEach(t=>{$("#n-"+t).textContent="("+(d.facets[t]||0)+")"});
+  render();
+}
+function hl(text){const words=state.q.toLowerCase().split(/\W+/).filter(w=>w.length>2);let h=esc(text);
+  words.forEach(w=>{h=h.replace(new RegExp("("+w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","gi"),"<mark>$1</mark>")});return h}
+function snipOf(r){return (r.match&&r.match.snippet)||(r.text_match&&r.text_match.snippet)||""}
+function matchLabel(r){const m=r.match;if(!m)return"";
+  if(m.kind=="frame")return"match at "+fmtTime(m.ref); if(m.kind=="page")return"visual match on page "+m.ref+(r.text_match&&r.text_match.kind=="chunk"?` · text on page ${r.text_match.ref}`:"");
+  if(m.kind=="chunk")return"text on page "+m.ref; if(m.kind=="transcript")return"speech at "+fmtTime(m.ref); return m.kind=="meta"?"document title/keywords":""}
+function render(){
+  const g=$("#grid");g.innerHTML="";
+  if(!state.results.length){g.innerHTML='<div class="empty" style="grid-column:1/-1">No matching assets. Try describing the content differently, or loosen the filters.</div>';$("#more").style.display="none";return}
+  state.results.forEach((r,i)=>{
+    const c=document.createElement("div");c.className="card";
+    const th=r.match&&r.match.thumb||r.thumb;
+    const dup=r.duplicates?` · ${r.duplicates+1} copies`:"";
+    const dur=r.type=="video"&&r.duration?` · ${fmtTime(r.duration)}`:r.type=="pdf"?` · ${r.pages} p`:"";
+    c.innerHTML=`<div class="thumb" style="${th?`background-image:url('/thumbs/${encodeURI(th)}')`:""}">${th?"":"no preview"}<span class="badge">${ICON[r.type]}</span><span class="badge r" title="Absolute match strength (not relative to the best result)">${Math.round(r.confidence*100)}%</span></div>
+      <div class="score"><i style="width:${r.confidence*100}%"></i></div>
+      <div class="cb"><div class="name">${esc(r.name)}</div>
+      <div class="sub">${fmtSize(r.size)}${dur}${dup}</div>
+      <div class="sub">${esc(matchLabel(r))}</div>
+      ${snipOf(r)?`<div class="snip">${hl(snipOf(r))}</div>`:""}</div>`;
+    c.onclick=()=>openModal(r);g.appendChild(c)});
+  $("#more").style.display=state.offset<state.total?"":"none";
+}
+$("#go").onclick=()=>search(false);$("#q").addEventListener("keydown",e=>{if(e.key=="Enter")search(false)});
+$("#more").onclick=()=>search(true);
+$$(".ty,#ext,#minmb,#maxmb,#folder").forEach(el=>el.addEventListener("change",()=>{if(state.q)search(false)}));
+
+/* ---------- preview modal ---------- */
+function openModal(r){
+  const f=r.files[0], url=`/api/files/${f.id}/content`, m=r.match||{};
+  let pv="";
+  if(r.type=="image")pv=`<img src="${url}" alt="">`;
+  else if(r.type=="video")pv=`<video controls preload="metadata" src="${url}#t=${m.kind=="frame"?m.ref:0}"></video>`;
+  else pv=`<iframe src="${url}#page=${(m.kind=="page"||m.kind=="chunk")?m.ref:(r.text_match&&r.text_match.ref)||1}"></iframe>`;
+  const rows=[["Type",r.type.toUpperCase()+(r.ext?` (${r.ext})`:"")],["Size",fmtSize(r.size)]];
+  if(r.width)rows.push(["Dimensions",`${r.width} × ${r.height}`]); if(r.duration)rows.push(["Duration",fmtTime(r.duration)]); if(r.pages)rows.push(["Pages",r.pages]);
+  Object.entries(r.meta||{}).forEach(([k,v])=>{if(v!=null&&v!=="")rows.push([k,String(v).slice(0,80)])});
+  rows.push(["Match strength",Math.round(r.confidence*100)+"%  "+Object.entries(r.evidence).map(([k,v])=>({clip:"visual",text:"text",kw:"keyword"}[k])+" "+v).join(", ")]);
+  const locs=r.files.map(x=>`<div class="path">${esc(x.path)}</div><div class="row"><button class="sec" data-copy="${esc(x.path)}">Copy path</button><button class="sec" data-reveal="${x.id}">Show in folder</button><a class="sec" style="text-decoration:none;display:inline-block" href="/api/files/${x.id}/content" target="_blank"><button class="sec">Open original</button></a></div>`).join("");
+  $("#sheet").innerHTML=`<div class="pv">${pv}</div><div class="info"><h3>${esc(r.name)}</h3>
+    <table>${rows.map(([a,b])=>`<tr><td>${esc(a)}</td><td>${esc(b)}</td></tr>`).join("")}</table>
+    ${snipOf(r)?`<div class="snip" style="-webkit-line-clamp:unset"><b>Matching text${r.text_match?` (page ${r.text_match.ref})`:""}:</b> ${hl(snipOf(r))}</div>`:""}
+    ${r.warnings.length?`<div class="warn">Notes: ${r.warnings.map(esc).join("; ")}</div>`:""}
+    <b>${r.files.length>1?`Locations (${r.files.length} identical copies)`:"Location"}</b>${locs}
+    <div class="row"><button class="sec" id="closeM">Close</button></div></div>`;
+  $("#modal").classList.add("on");
+  $("#closeM").onclick=closeModal;
+  $$("[data-copy]").forEach(b=>b.onclick=async e=>{e.stopPropagation();try{await navigator.clipboard.writeText(b.dataset.copy);b.textContent="Copied"}catch{prompt("Copy path",b.dataset.copy)}});
+  $$("[data-reveal]").forEach(b=>b.onclick=async e=>{e.stopPropagation();const x=await fetch(`/api/files/${b.dataset.reveal}/reveal`,{method:"POST"});b.textContent=x.ok?"Opened":"Failed"});
+}
+function closeModal(){$("#modal").classList.remove("on");$("#sheet").innerHTML=""}
+$("#modal").onclick=e=>{if(e.target.id=="modal")closeModal()};
+document.addEventListener("keydown",e=>{if(e.key=="Escape")closeModal()});
+
+/* ---------- indexing panel ---------- */
+let timer=null;
+async function pollIndex(){
+  const s=await (await fetch("/api/index/status")).json(), r=s.run, c=s.counts;
+  const total=r.queued||0, pct=total?Math.min(100,r.processed/total*100):(r.phase=="done"?100:0);
+  $("#bar").style.width=pct+"%";
+  const label={idle:"Idle",scanning:"Scanning folder…",processing:"Analysing files…",done:"Finished",cancelled:"Cancelled (progress saved - run again to resume)",error:"Error: "+(r.error||"")}[r.phase]||r.phase;
+  $("#phase").textContent=label+(s.running&&s.eta_sec?` · about ${fmtTime(s.eta_sec)} left`:"");
+  const kv=(n,l,cls="")=>`<div><b class="${cls}">${n}</b><span>${l}</span></div>`;
+  $("#runkv").innerHTML=kv(r.scanned,"files scanned")+kv(r.new,"new")+kv(r.changed,"changed")+kv(r.unchanged,"unchanged (skipped)")+kv(r.indexed,"analysed by AI","ok")+kv(r.reused,"duplicates / reused")+kv(r.failed,"failed","bad")+kv(r.unsupported,"unsupported","warn");
+  $("#current").textContent=s.current.length?"Working on: "+s.current.map(p=>p.split(/[\\/]/).pop()).join(", "):"";
+  $("#start").disabled=$("#retry").disabled=s.running;$("#cancel").disabled=!s.running;
+  clearTimeout(timer);
+  if(s.running){timer=setTimeout(pollIndex,1000)}else if($("#index").style.display!="none"){loadStats();loadFails()}
+}
+async function loadStats(){
+  const d=await (await fetch("/api/stats")).json();
+  const kv=(n,l)=>`<div><b>${n}</b><span>${l}</span></div>`;
+  $("#statkv").innerHTML=d.by_type.map(t=>kv(t.assets,`${t.type} assets (${t.files} files, ${fmtSize(t.bytes||0)})`)).join("")
+    +kv(d.duplicate_groups,"duplicate groups")+kv(fmtSize(d.total_bytes_on_disk),"total on disk")+kv((d.vectors.clip||0)+(d.vectors.text||0),"embeddings stored");
+}
+async function loadFails(){
+  const d=await (await fetch("/api/files")).json();
+  $("#fails").innerHTML=d.length?d.map(f=>`<tr><td class="${f.state=="failed"?"bad":"warn"}">${f.state}</td><td>${esc(f.name)}</td><td class="sub">${esc(f.error)}</td></tr>`).join(""):'<tr><td class="sub">None 🎉 everything indexed cleanly.</td></tr>';
+}
+const post=(u,b)=>fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b||{})});
+$("#start").onclick=async()=>{await post("/api/index/start");pollIndex()};
+$("#retry").onclick=async()=>{await post("/api/index/start",{retry_failed:true});pollIndex()};
+$("#cancel").onclick=async()=>{await post("/api/index/cancel");pollIndex()};
+</script>
+</body>
+</html>

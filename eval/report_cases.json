@@ -1,0 +1,7 @@
+{
+  "Image Tests": ["woman with a cat", "woman feeding cats", "modern living room", "modern kitchen", "person cooking in a kitchen"],
+  "Video Tests": ["excavator construction machinery", "demolition with heavy machinery", "person speaking in an interview", "people discussing social issues"],
+  "PDF Tests": ["copyright", "Wikipedia editing", "laboratory regulations", "residential development", "environmental impact"],
+  "Deliberately Poor/Negative Query Test": ["<<< PUT THE NEGATIVE QUERY TEXT USED IN TEST CASE 15 HERE >>>"],
+  "Test Filters": [{"query": "construction", "types": null}]
+}
