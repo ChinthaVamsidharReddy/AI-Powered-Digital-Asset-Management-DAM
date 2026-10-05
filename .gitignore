@@ -5,3 +5,4 @@ __pycache__/
 .venv/
 data/
 docs/EVAL_RESULTS.md.bak
+*.md text eol=lf
